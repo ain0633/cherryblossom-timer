@@ -1,0 +1,18 @@
+# dependencies & build output
+node_modules/
+web/node_modules/
+web/dist/
+
+# Blender auto-save backups
+*.blend1
+
+# large, regenerable output (debug renders + unused pre-rendered petal sequences)
+renders/
+web/public/petals_seq/
+
+# local-only editor/agent config
+.claude/settings.local.json
+
+# OS cruft
+.DS_Store
+Thumbs.db
