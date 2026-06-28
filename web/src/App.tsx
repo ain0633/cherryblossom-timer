@@ -20,6 +20,9 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null)
   const toastTimer = useRef<number>(0)
 
+  // dev-only scrub bar: hidden normally, shown when the URL hash is #dev
+  const showDev = typeof window !== 'undefined' && window.location.hash === '#dev'
+
   // first-visit intro (re-openable via the ? button). gated by localStorage.
   const [showIntro, setShowIntro] = useState(() => {
     try { return !localStorage.getItem('cbt-intro-v1') } catch { return true }
@@ -68,7 +71,8 @@ export default function App() {
         </div>
       )}
 
-      {/* local preview bar: scrub the bloom and switch phase to verify the animation */}
+      {/* dev-only preview bar (scrub bloom + switch phase): visible only at #dev */}
+      {showDev && (
       <div className="preview">
         <div className="preview-modes">
           <button className={t.mode === 'focus' ? 'on' : ''}
@@ -81,6 +85,7 @@ export default function App() {
           onChange={(e) => t.preview(t.mode, parseFloat(e.target.value))} />
         <span className="preview-val">개화 {Math.round(t.bloom * 100)}%</span>
       </div>
+      )}
 
       <div className="hud">
         <div className="mode" data-mode={dispMode}>{dispMode === 'focus' ? '집중' : '휴식'}</div>
