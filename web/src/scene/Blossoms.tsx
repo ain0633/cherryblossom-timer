@@ -2,16 +2,17 @@ import * as THREE from 'three'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
+import { asset } from '../assetUrl'
 
 type Data = { positions: number[][]; colors: number[][] }
 
 export function Blossoms({ bloom }: { bloom: number }) {
-  const { nodes } = useGLTF('/assets/flower.glb')
+  const { nodes } = useGLTF(asset('assets/flower.glb'))
   const [data, setData] = useState<Data | null>(null)
   const ref = useRef<THREE.InstancedMesh>(null)
 
   useEffect(() => {
-    fetch('/assets/blossoms.json').then((r) => r.json()).then(setData)
+    fetch(asset('assets/blossoms.json')).then((r) => r.json()).then(setData)
   }, [])
 
   const geo = useMemo(() => {
@@ -63,4 +64,4 @@ export function Blossoms({ bloom }: { bloom: number }) {
   )
 }
 
-useGLTF.preload('/assets/flower.glb')
+useGLTF.preload(asset('assets/flower.glb'))

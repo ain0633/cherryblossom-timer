@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
+import { asset } from '../assetUrl'
 
 // An even, snow-like carpet of fallen petals, growing with accumulation (amount = 1 - bloom).
 // The ground undulates +-0.15 near the tree, so the carpet sits at Y_CARPET (above the hills) as a
@@ -43,7 +44,7 @@ export function GroundCarpet({ amount }: { amount: number }) {
   const cur = useRef(0)   // eased display amount -> carpet fades in/out instead of popping
 
   const petalTex = useMemo(() => {
-    const t = new THREE.TextureLoader().load('/petals/petal.png')
+    const t = new THREE.TextureLoader().load(asset('petals/petal.png'))
     t.colorSpace = THREE.SRGBColorSpace
     return t
   }, [])

@@ -1,11 +1,12 @@
 import { useEffect } from 'react'
 import { useThree, useLoader } from '@react-three/fiber'
 import * as THREE from 'three'
+import { asset } from '../assetUrl'
 
 // Blender SkyDome baked to an equirectangular image -> the web sky is 100% identical to the .blend.
 export function SkyDome() {
   const { scene } = useThree()
-  const tex = useLoader(THREE.TextureLoader, '/assets/sky.jpg')
+  const tex = useLoader(THREE.TextureLoader, asset('assets/sky.jpg'))
   useEffect(() => {
     tex.mapping = THREE.EquirectangularReflectionMapping
     tex.colorSpace = THREE.SRGBColorSpace

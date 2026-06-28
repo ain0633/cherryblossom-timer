@@ -2,6 +2,7 @@ import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { asset } from '../assetUrl'
 
 // Distant cherry trees, straight from Blender (fartrees.glb): a branch skeleton (FarTrunkMat) +
 // fluffy 9-lump canopy (FarPink1/2/3). The canopy fades with `bloom` -> on 낙화 the branches show.
@@ -14,7 +15,7 @@ const FAR: Record<string, string> = {
 const clamp = (x: number) => Math.max(0, Math.min(1, x))
 
 export function FarTrees({ bloom }: { bloom: number }) {
-  const { scene } = useGLTF('/assets/fartrees.glb', '/draco/')
+  const { scene } = useGLTF(asset('assets/fartrees.glb'), asset('draco/'))
   const canopyMats = useRef<THREE.MeshStandardMaterial[]>([])
   const bloomRef = useRef(bloom)
   bloomRef.current = bloom
@@ -53,4 +54,4 @@ export function FarTrees({ bloom }: { bloom: number }) {
   return <primitive object={scene} />
 }
 
-useGLTF.preload('/assets/fartrees.glb', '/draco/')
+useGLTF.preload(asset('assets/fartrees.glb'), asset('draco/'))

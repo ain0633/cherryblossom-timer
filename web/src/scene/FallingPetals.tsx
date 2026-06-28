@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
+import { asset } from '../assetUrl'
 
 // Petals fall FROM the tree: each one spawns at a real blossom position (from blossoms.json)
 // and descends to the ground, then recycles to another blossom. Pool / object reuse -> seamless.
@@ -25,7 +26,7 @@ export function FallingPetals({ amount }: { amount: number }) {
 
   // the real cherry petal sprite rendered in Blender (shape + soft shading + tip notch)
   const tex = useMemo(() => {
-    const t = new THREE.TextureLoader().load('/petals/petal.png')
+    const t = new THREE.TextureLoader().load(asset('petals/petal.png'))
     t.colorSpace = THREE.SRGBColorSpace
     return t
   }, [])
@@ -46,7 +47,7 @@ export function FallingPetals({ amount }: { amount: number }) {
   }
 
   useEffect(() => {
-    fetch('/assets/blossoms.json').then((r) => r.json()).then((d) => {
+    fetch(asset('assets/blossoms.json')).then((r) => r.json()).then((d) => {
       posRef.current = d.positions
       psRef.current = Array.from({ length: MAX }, () => spawn(true))
       setReady(true)
