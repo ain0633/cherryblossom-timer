@@ -14,7 +14,7 @@ for m in list(bake.modifiers):
         bpy.ops.object.modifier_apply(modifier=m.name)
     except Exception as e:
         print("apply skip", m.name, e)
-dec = bake.modifiers.new("D", "DECIMATE"); dec.ratio = 0.3
+dec = bake.modifiers.new("D", "DECIMATE"); dec.ratio = 0.6
 bpy.ops.object.modifier_apply(modifier=dec.name)
 
 # own copy of the bark material (don't pollute original)

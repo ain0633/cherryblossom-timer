@@ -42,7 +42,8 @@ export function Blossoms({ bloom }: { bloom: number }) {
       m.compose(pos, q, scl)
       inst.setMatrixAt(i, m)
       const c = data.colors[i]
-      col.setRGB(c[0], c[1], c[2])
+      // saturate toward pink (pull green/blue down) so the canopy reads pink, not whitish
+      col.setRGB(c[0], c[1] * 0.82, c[2] * 0.9)
       inst.setColorAt(i, col)
     }
     inst.instanceMatrix.needsUpdate = true

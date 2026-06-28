@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { StageView } from './StageView'
-import { PetalsLive } from './PetalsLive'
-import { usePomodoro } from './usePomodoro'
+import { Scene } from './scene/Scene'
+import { usePomodoro, DURATIONS } from './usePomodoro'
 import { playChime } from './sound'
 
 function fmt(s: number) {
@@ -14,17 +13,29 @@ export default function App() {
   const t = usePomodoro()
   // petals fall in proportion to the blossoms still on the tree; none during break
   const petalAmount = t.mode === 'focus' ? t.bloom : 0
+  // when a phase just finished, show the NEXT phase ready (paused) so 「시작」 starts it
+  const dispMode = t.phaseDone ? t.nextMode : t.mode
+  const dispSeconds = t.phaseDone ? DURATIONS[t.nextMode] : t.secondsLeft
 
   const [toast, setToast] = useState<string | null>(null)
   const toastTimer = useRef<number>(0)
+
+  // first-visit intro (re-openable via the ? button). gated by localStorage.
+  const [showIntro, setShowIntro] = useState(() => {
+    try { return !localStorage.getItem('cbt-intro-v1') } catch { return true }
+  })
+  const closeIntro = () => {
+    setShowIntro(false)
+    try { localStorage.setItem('cbt-intro-v1', '1') } catch { /* ignore */ }
+  }
 
   // phase-transition alarm: chime + message (PRD 3.1)
   useEffect(() => {
     if (!t.completed) return
     playChime()
     const msg = t.completed.ended === 'focus'
-      ? '낙화가 완료되었습니다. 잠시 쉬어가세요.'
-      : '다시 꽃이 만개했습니다. 집중할 시간입니다.'
+      ? '집중 완료! 낙화가 끝났어요. 「휴식 시작」을 눌러 쉬어가세요.'
+      : '휴식 완료! 다시 꽃이 만개했어요. 「집중 시작」을 눌러보세요.'
     setToast(msg)
     window.clearTimeout(toastTimer.current)
     toastTimer.current = window.setTimeout(() => setToast(null), 6000)
@@ -32,10 +43,30 @@ export default function App() {
 
   return (
     <>
-      <StageView bloom={t.bloom} />
-      <PetalsLive amount={petalAmount} />
+      <Scene bloom={t.bloom} petalAmount={petalAmount} carpetAmount={t.carpet} />
 
       {toast && <div className="toast">{toast}</div>}
+
+      <button className="help-btn" onClick={() => setShowIntro(true)} aria-label="도움말">?</button>
+
+      {showIntro && (
+        <div className="intro-backdrop" onClick={closeIntro}>
+          <div className="intro-card" onClick={(e) => e.stopPropagation()}>
+            <div className="intro-emoji">🌸</div>
+            <h1 className="intro-title">벚꽃이 지면</h1>
+            <p className="intro-sub">꽃이 다 질 때까지 집중하는 뽀모도로 타이머</p>
+            <div className="intro-lines">
+              <p><b>집중 45분</b> · 꽃잎이 하나둘 흩날려요 <span>낙화</span></p>
+              <p><b>휴식 15분</b> · 다시 벚꽃이 피어나요 <span>개화</span></p>
+            </div>
+            <p className="intro-foot">
+              「시작」을 누르면 시간이 흐르기 시작하고,<br />
+              한 단계가 끝나면 가만히 알려드릴게요.
+            </p>
+            <button className="intro-btn" onClick={closeIntro}>시작하기</button>
+          </div>
+        </div>
+      )}
 
       {/* local preview bar: scrub the bloom and switch phase to verify the animation */}
       <div className="preview">
@@ -52,8 +83,8 @@ export default function App() {
       </div>
 
       <div className="hud">
-        <div className="mode" data-mode={t.mode}>{t.mode === 'focus' ? '집중' : '휴식'}</div>
-        <div className="time">{fmt(t.secondsLeft)}</div>
+        <div className="mode" data-mode={dispMode}>{dispMode === 'focus' ? '집중' : '휴식'}</div>
+        <div className="time">{fmt(dispSeconds)}</div>
         <div className="buttons">
           {t.running ? (
             <button onClick={t.pause}>일시정지</button>
