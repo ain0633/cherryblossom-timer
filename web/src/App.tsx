@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Scene } from './scene/Scene'
 import { usePomodoro, DURATIONS } from './usePomodoro'
-import { playChime } from './sound'
+import { playChime, notify, requestNotifyPermission } from './sound'
 
 function fmt(s: number) {
   const m = Math.floor(s / 60)
@@ -32,17 +32,23 @@ export default function App() {
     try { localStorage.setItem('cbt-intro-v1', '1') } catch { /* ignore */ }
   }
 
-  // phase-transition alarm: chime + message (PRD 3.1)
+  // phase-transition alarm: chime + system notification + on-screen message (PRD 3.1)
   useEffect(() => {
     if (!t.completed) return
     playChime()
-    const msg = t.completed.ended === 'focus'
+    const focus = t.completed.ended === 'focus'
+    const msg = focus
       ? '집중 완료! 낙화가 끝났어요. 「휴식 시작」을 눌러 쉬어가세요.'
       : '휴식 완료! 다시 꽃이 만개했어요. 「집중 시작」을 눌러보세요.'
+    // system notification reaches the user even on another tab/app
+    notify(focus ? '🌸 집중 완료 — 휴식 시간이에요' : '🌸 휴식 완료 — 집중할 시간이에요', msg)
     setToast(msg)
     window.clearTimeout(toastTimer.current)
     toastTimer.current = window.setTimeout(() => setToast(null), 6000)
   }, [t.completed?.n])
+
+  // request notification permission on the first explicit start (user gesture)
+  const handleStart = () => { requestNotifyPermission(); t.start() }
 
   return (
     <>
@@ -94,7 +100,7 @@ export default function App() {
           {t.running ? (
             <button onClick={t.pause}>일시정지</button>
           ) : (
-            <button className="primary" onClick={t.start}>시작</button>
+            <button className="primary" onClick={handleStart}>시작</button>
           )}
           <button onClick={t.reset}>리셋</button>
         </div>

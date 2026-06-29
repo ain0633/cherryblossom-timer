@@ -14,43 +14,58 @@ export function usePomodoro() {
   const [completed, setCompleted] = useState<Completed | null>(null)
   // manual scrub (0..1) for dev preview (hidden in the normal UI)
   const [scrub, setScrub] = useState<number | null>(null)
-  const raf = useRef<number>(0)
-  const last = useRef<number>(0)
   const nCompleted = useRef<number>(0)
+  // wall-clock endpoint: the phase ends at an absolute timestamp, so the timer
+  // stays accurate while the tab is backgrounded (RAF stops, and throttled
+  // timers can drift, but Date.now() never lies).
+  const endAt = useRef<number>(0)
   // refs so start() reads live values without re-subscribing
   const modeRef = useRef(mode); modeRef.current = mode
   const secondsRef = useRef(secondsLeft); secondsRef.current = secondsLeft
 
   useEffect(() => {
     if (!running) return
-    last.current = performance.now()
-    const tick = (now: number) => {
-      const dt = (now - last.current) / 1000
-      last.current = now
-      setSecondsLeft((s) => {
-        const next = s - dt
-        if (next <= 0) {
-          // phase finished: STOP and wait for the user to start the next phase
-          setRunning(false)
-          nCompleted.current += 1
-          const ended = modeRef.current
-          setCompleted({ ended, next: other(ended), n: nCompleted.current })
-          return 0
-        }
-        return next
-      })
-      raf.current = requestAnimationFrame(tick)
+    let done = false
+    const finish = () => {
+      if (done) return
+      done = true
+      // phase finished: STOP and wait for the user to start the next phase
+      setRunning(false)
+      setSecondsLeft(0)
+      nCompleted.current += 1
+      const ended = modeRef.current
+      setCompleted({ ended, next: other(ended), n: nCompleted.current })
     }
-    raf.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf.current)
+    const check = () => {
+      const remaining = (endAt.current - Date.now()) / 1000
+      if (remaining <= 0) { finish(); return }
+      setSecondsLeft(remaining)
+    }
+    check()
+    // interval keeps the display fresh and detects completion even in a hidden
+    // tab (browsers throttle these but never stop them the way they stop RAF).
+    const interval = window.setInterval(check, 250)
+    // a single long timeout fires the chime close to on-time even when the tab
+    // is deeply throttled (the interval may be clamped to ~1/min in background).
+    const timeout = window.setTimeout(finish, Math.max(0, endAt.current - Date.now()))
+    // instant catch-up the moment the user returns to the tab.
+    const onVis = () => { if (document.visibilityState === 'visible') check() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      window.clearInterval(interval)
+      window.clearTimeout(timeout)
+      document.removeEventListener('visibilitychange', onVis)
+    }
   }, [running])
 
   // start: if the current phase is finished (00:00), advance to the next phase first; else resume.
   const start = useCallback(() => {
-    if (secondsRef.current <= 0) {
+    let secs = secondsRef.current
+    if (secs <= 0) {
       const nm = other(modeRef.current)
-      setMode(nm); setSecondsLeft(DURATIONS[nm]); setScrub(null)
+      setMode(nm); secs = DURATIONS[nm]; setSecondsLeft(secs); setScrub(null)
     }
+    endAt.current = Date.now() + secs * 1000
     setRunning(true)
   }, [])
   const pause = useCallback(() => setRunning(false), [])

@@ -24,3 +24,18 @@ export function playChime() {
     o.start(t0); o.stop(t0 + 1.7)
   })
 }
+
+// System notification so a finished phase is noticed while the user is on
+// another tab/app. Must be requested from a user gesture (the 시작 button).
+export function requestNotifyPermission() {
+  if (typeof Notification === 'undefined') return
+  if (Notification.permission === 'default') Notification.requestPermission().catch(() => {})
+}
+
+export function notify(title: string, body: string) {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+  try {
+    const n = new Notification(title, { body, tag: 'cbt-phase' })
+    n.onclick = () => { window.focus(); n.close() }
+  } catch { /* ignore */ }
+}
