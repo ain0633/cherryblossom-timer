@@ -99,6 +99,8 @@ Vite + React + TS + **React-Three-Fiber + drei**. 실행: `cd web && npm run dev
 - (완료) 웹 v1: 씬·타이머·밀도연동·낙화, 꽃잎 색 그라데이션, 베이크 수피.
 - (완료) **실시간 3D 씬 전환**(Scene.tsx) + v2 에셋 동기화 + 뽀모도로 UX(알람·휴식플로우·카펫 누적/소멸) + 인트로 모달 + WILDgag 폰트 CDN.
 - (완료) **정식 배포**: GitHub Pages + 커스텀 도메인 `ainsof.dev/cherryblossom-timer`. README 상세화.
+- (완료, 2026-06-29) **백그라운드 알람**: 다른 탭/앱 작업 중에도 단계 종료를 인지하도록 ①타이머를 RAF(백그라운드에서 멈춤)→**절대 종료시각(endAt) 기반 setInterval/setTimeout**으로 교체(`usePomodoro.ts`, 탭 복귀 시 visibilitychange 즉시 재계산), ②**시스템 알림(Notification API)** 추가(`sound.ts` requestNotifyPermission/notify, 첫 「시작」에서 권한 요청). 한계: 브라우저는 켜져 있어야 함(완전 종료 시 알람은 Web Push+서버 필요, 미구현).
+- (완료, 2026-06-29) **집중/휴식 시간 커스텀 설정**: 고정 DURATIONS → `durations` 상태(localStorage `'cbt-durations-v1'` 영속, 1~180분 클램프, `setDurations`은 정지 중이면 즉시 시계 반영). 인트로/설정 모달(`?` 버튼 재오픈)에 집중·휴식 분 입력 필드 추가, 안내 문구도 설정값 반영.
 
 **다음 이어서 할 일(미완):**
 - **HTTPS 마무리**: `.dev`는 브라우저 HTTPS 강제. GitHub TLS 인증서 발급 완료되면 Settings→Pages "Enforce HTTPS" 체크(또는 `gh api -X PUT repos/ain0633/ain0633.github.io/pages -F https_enforced=true`). 가비아에 GitHub IP(185.199.108~111.153)와 무관한 파킹 A레코드(216.198.79.1)가 남아 있으면 삭제 권고함 — 정리됐는지 확인.
