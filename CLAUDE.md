@@ -62,6 +62,14 @@
 
 **이전 레퍼런스 매칭(참고):** ①수형=낮게 분기·넓은 우산형·늘어지는 가지(step1 trunk 2.4/primaries up 0.5~0.95·spread×1.5·nprim12) ②수피=붉은 고목+밑동 이끼(step3_bark) ③꽃=CLUSTER_SCALE 0.072·진분홍 TINTS·12% 진분홍 산포(render_stages/framing_test) ④잔디 황금빛·원경 38그루(step4_env). step1이 모든 메쉬를 지우므로 재실행 시 step4_env→render_stages→step6_wind→render_petal_tiers 순으로 재구성. 웹 에셋 전체 재렌더 완료.
 
+**최신 작업 (2026-06-29) — 실시간 3D 전환 + 정식 배포(완료):**
+- **사전렌더 플립북 폐기 → 실시간 3D 씬으로 전환.** 사용자가 "꽃잎이 진짜 나무에서 떨어지게" 요구 → `web/src/scene/Scene.tsx`(R3F Canvas)가 Tree(trunk.glb)+Blossoms(flower.glb 인스턴싱, bloom→개수)+FallingPetals+GroundCarpet+SkyDome+Ground+FarTrees+조명+OrbitControls 조립. App이 StageView/PetalsLive→Scene으로 교체.
+- **에셋은 cherry_blossom_v2.blend에서 그대로 추출(추측 금지).** v2 로드 상태로 익스포트 스크립트 재실행 → trunk.glb(붉은 수피 베이크, bake_bark 데시메이트 0.6 → 5.3MB), blossoms.json(실제 꽃 2만 위치, extract_blossoms_v2.py), fartrees.glb(가지 스켈레톤+9혹 캐노피, make_fartrees_branched.py), ground.glb(잔디 베이크, bake_ground.py), sky.jpg(등장방형 베이크, sky_equirect.py).
+- **glTF 절차재질 소실 → 코드 재지정:** Ground/FarTree 절차 머티리얼이 흰색으로 빠짐 → `dump_mats.py`로 블렌더 실제 색값 추출해 머티리얼명으로 매핑(FarPink1/2/3·FarTrunkMat). **하늘은 재구현 말고 Cycles 파노라마 등장방형 베이크가 정답.** (자세한 교훈은 메모리 [[realtime-3d-web-sync]])
+- **뽀모도로 UX 정립:** 단계 종료 시 자동전환 안 함 → 정지+알람음(playChime, `sound.ts`)+토스트 메시지, 사용자가 **「시작」** 눌러 다음 단계로. 집중=낙화+바닥 카펫 누적, **휴식 시작 시 카펫 사라짐(eased)**. 카펫=`GroundCarpet.tsx`(핑크 블랭킷 데칼+평평한 꽃잎 스프라이트, 눈처럼 "소복"; 꽃잎 송곳현상=yaw를 Z슬롯에 둬 해결, y=0.18로 잔디 구릉 위). 낙화=`FallingPetals.tsx`(blossoms.json 실제 위치 스폰→하강→풀링).
+- **인트로 모달**(글래스모피즘, 첫 방문 localStorage 'cbt-intro-v1', ? 버튼 재오픈): 제목 "벚꽃이 지면" / 부제 "꽃이 다 질 때까지 집중하는 뽀모도로 타이머". **폰트=`[KIM]WILDgag`** → 폰트 전용 public repo `github.com/ain0633/wildgag-font` jsDelivr CDN(버튼은 font-family 상속 안 해 개별 지정). 상단 미리보기 스크럽바는 `#dev` 해시에서만 표시.
+- **정식 배포:** GitHub Pages(`.github/workflows/deploy.yml`, main 푸시마다 web 빌드→배포). **커스텀 도메인 `ainsof.dev`(가비아)** 연결 = 포트폴리오 서브경로 구조: 대표 repo `ain0633/ain0633.github.io`(public, 랜딩+CNAME)에 도메인 → 프로젝트가 `ainsof.dev/<repo>/`로 서빙. 타이머 repo를 `Cherry-Blossom-Timer`→**`cherryblossom-timer`** rename, vite base `/cherryblossom-timer/`. **라이브 = https://ainsof.dev/cherryblossom-timer** (HTTPS 인증서 자동발급 대기 중이었음). README 상세화, 레퍼런스 이미지(벚꽃예시·배경레퍼런스)는 GitHub에서 제거(로컬 보존, .gitignore 등록).
+
 ---
 
 ## 웹 빌드 (`web/`)
@@ -76,7 +84,7 @@ Vite + React + TS + **React-Three-Fiber + drei**. 실행: `cd web && npm run dev
 - `export_trunk_opt.py` — 수피 없이 단색 둥치 빠른 익스포트(구버전, 참고용).
 - Draco 디코더는 `web/public/draco/`에 복사됨(three 번들), `useGLTF(url,'/draco/')`.
 
-**웹 구조 (현재 = 사전 렌더 플립북, 사용자 선택):** 실시간 3D는 Blender 근사치라, "Blender 그대로"를 위해 **사전 렌더 방식**으로 전환.
+**웹 구조 (⚠️ 아래는 옛 사전 렌더 플립북 방식 — 현재는 실시간 3D `Scene.tsx`로 대체됨. 이력/참고용. 최신은 위 "2026-06-29" 블록 참고):**
 - `render_stages.py` — 만개→앙상 20단계(밀도↓·카펫↑)를 메인 카메라로 고품질 렌더 → `web/public/stages/stage_00..19.jpg`(**16:9 1600×900**, 공중 낙화는 숨김). 카메라는 뒤로 뺀 와이드 구도(loc (0,-30,5), lens 50)로 나무 전체+여백. `render_petal_tiers.py`도 동일 카메라+1280×720으로 정렬.
 - `render_petal_tiers.py` — 낙화를 **3단계 밀도**(t0/t1/t2)로 메인 카메라·투명배경 렌더 → `web/public/petals_seq/t0..t2/petal_0001..0150.png`(1280×720). **방출 평면은 넓은 캐노피 전체(±11, z8)** (step6_wind, 옛 좁은 z6.5는 중앙 띠 버그). **음수 프레임(-60)부터 워밍업** 후 1~150만 저장 → 1프레임부터 꽉 차서 루프 끊김 없음(연속 낙화). 타일 카운트 [1500/6000/12000].
 - **낙화 = 실시간 3D로 전환(중요).** 사전렌더 영상(PetalSequence)은 "따로 노는/루프/누적 없음" 한계로 폐기 → `PetalsLive.tsx`(투명 R3F Canvas 오버레이). Blender 스테이지 카메라(loc(0,-40,5.5) lens40 16:9)를 three에서 재현(CamRig: hfov 48.5° 매칭, cover 보정). 캐노피(반경~8.5, y4~13)에서 InstancedMesh 꽃잎이 실제로 낙하→바닥(y0) 착지·resting→재활용. **무한 연속·bloom 비례(amount=focus?bloom:0)·실제 누적**. meshBasicMaterial+instanceColor(분홍 4색), vertexColors 금지(인스턴스컬러 가림). petals_seq/render_petal_tiers는 이제 미사용.
@@ -89,10 +97,16 @@ Vite + React + TS + **React-Three-Fiber + drei**. 실행: `cd web && npm run dev
 
 - (완료) 낙화 양/속도, 바닥 카펫, `BLOSSOM_DENSITY` 단계 연동(step7_stages) — 사용자 승인.
 - (완료) 웹 v1: 씬·타이머·밀도연동·낙화, 꽃잎 색 그라데이션, 베이크 수피.
-- 웹 다듬기: 바닥 누적 카펫(밀도연동), 알파 텍스처 꽃잎, 알람/사운드, 모바일 대응, 번들 코드분할.
-- **웹 빌드** ← 다음 주요 단계: GLB 익스포트 + **폴리곤 최적화**(현재 수천만, 웹에 과중) → Three.js/R3F 씬,
-  타이머 로직(45/15분), 낙화·누적·밀도연동을 웹 GPU 파티클로 실시간 재구현, 알람/사운드.
-- (선택) "쌓인 꽃잎이 살랑바람에 다시 날림"은 웹에서 처리(Blender 파티클 캐시 한계로 보류).
+- (완료) **실시간 3D 씬 전환**(Scene.tsx) + v2 에셋 동기화 + 뽀모도로 UX(알람·휴식플로우·카펫 누적/소멸) + 인트로 모달 + WILDgag 폰트 CDN.
+- (완료) **정식 배포**: GitHub Pages + 커스텀 도메인 `ainsof.dev/cherryblossom-timer`. README 상세화.
+
+**다음 이어서 할 일(미완):**
+- **HTTPS 마무리**: `.dev`는 브라우저 HTTPS 강제. GitHub TLS 인증서 발급 완료되면 Settings→Pages "Enforce HTTPS" 체크(또는 `gh api -X PUT repos/ain0633/ain0633.github.io/pages -F https_enforced=true`). 가비아에 GitHub IP(185.199.108~111.153)와 무관한 파킹 A레코드(216.198.79.1)가 남아 있으면 삭제 권고함 — 정리됐는지 확인.
+- **모바일 대응**: 카메라/HUD/터치 컨트롤, 반응형. 현재 데스크톱 와이드 기준.
+- **성능/번들**: GLB 폴리곤·용량 점검(trunk.glb 5.3MB), 코드 분할, 모바일 인스턴스 수 조절.
+- **마감 디테일**: 알파 텍스처 꽃잎, 잔잔한 배경 사운드(BGM/화이트노이즈), 알람음 다듬기.
+- (선택) 스크린샷/GIF를 README에 추가.
+- (선택) "쌓인 꽃잎이 살랑바람에 다시 날림" 웹에서 처리.
 
 ## 주의점
 
