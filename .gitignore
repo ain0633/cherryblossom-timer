@@ -16,3 +16,8 @@ web/public/petals_seq/
 # OS cruft
 .DS_Store
 Thumbs.db
+
+# design reference photos (kept locally, not on GitHub)
+배경 레퍼런스.jpg
+벚꽃예시*.jpg
+image-*.webp
