@@ -1,15 +1,37 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 
 export type Mode = 'focus' | 'break'
-export const DURATIONS: Record<Mode, number> = { focus: 45 * 60, break: 15 * 60 }
+export type Durations = Record<Mode, number> // seconds
+export const DEFAULT_DURATIONS: Durations = { focus: 45 * 60, break: 15 * 60 }
+// user-settable bounds (seconds): 1 min .. 180 min
+export const DURATION_BOUNDS = { min: 60, max: 180 * 60 }
+const STORAGE_KEY = 'cbt-durations-v1'
 const other = (m: Mode): Mode => (m === 'focus' ? 'break' : 'focus')
+const clampDur = (s: number) =>
+  Math.min(DURATION_BOUNDS.max, Math.max(DURATION_BOUNDS.min, Math.round(s)))
+
+function loadDurations(): Durations {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) {
+      const d = JSON.parse(raw)
+      if (typeof d?.focus === 'number' && typeof d?.break === 'number')
+        return { focus: clampDur(d.focus), break: clampDur(d.break) }
+    }
+  } catch { /* ignore */ }
+  return DEFAULT_DURATIONS
+}
 
 export type Completed = { ended: Mode; next: Mode; n: number }
 
 export function usePomodoro() {
+  // user-customizable phase lengths, persisted across visits
+  const [durations, setDur] = useState<Durations>(loadDurations)
+  const durationsRef = useRef(durations); durationsRef.current = durations
   const [mode, setMode] = useState<Mode>('focus')
-  const [secondsLeft, setSecondsLeft] = useState(DURATIONS.focus)
+  const [secondsLeft, setSecondsLeft] = useState(durations.focus)
   const [running, setRunning] = useState(false)
+  const runningRef = useRef(running); runningRef.current = running
   // fires once each time a phase naturally completes (for chime + message)
   const [completed, setCompleted] = useState<Completed | null>(null)
   // manual scrub (0..1) for dev preview (hidden in the normal UI)
@@ -63,17 +85,25 @@ export function usePomodoro() {
     let secs = secondsRef.current
     if (secs <= 0) {
       const nm = other(modeRef.current)
-      setMode(nm); secs = DURATIONS[nm]; setSecondsLeft(secs); setScrub(null)
+      setMode(nm); secs = durationsRef.current[nm]; setSecondsLeft(secs); setScrub(null)
     }
     endAt.current = Date.now() + secs * 1000
     setRunning(true)
   }, [])
   const pause = useCallback(() => setRunning(false), [])
   const reset = useCallback(() => {
-    setRunning(false); setMode('focus'); setSecondsLeft(DURATIONS.focus); setScrub(null)
+    setRunning(false); setMode('focus'); setSecondsLeft(durationsRef.current.focus); setScrub(null)
   }, [])
 
-  const liveProgress = 1 - secondsLeft / DURATIONS[mode] // 0..1 within current mode
+  // update phase lengths (seconds); persists and, while idle, updates the clock now.
+  const setDurations = useCallback((next: Durations) => {
+    const clamped: Durations = { focus: clampDur(next.focus), break: clampDur(next.break) }
+    setDur(clamped)
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(clamped)) } catch { /* ignore */ }
+    if (!runningRef.current) { setSecondsLeft(clamped[modeRef.current]); setScrub(null) }
+  }, [])
+
+  const liveProgress = 1 - secondsLeft / durations[mode] // 0..1 within current mode
   const progress = scrub != null ? scrub : liveProgress
 
   // bloom: 1 = full canopy, 0 = bare. LINEAR so half the time -> half the blossoms.
@@ -89,9 +119,9 @@ export function usePomodoro() {
 
   // preview: jump to a phase without running the clock (local verification bar)
   const preview = useCallback((m: Mode, value: number) => {
-    setRunning(false); setMode(m); setSecondsLeft(DURATIONS[m] * (1 - value)); setScrub(value)
+    setRunning(false); setMode(m); setSecondsLeft(durationsRef.current[m] * (1 - value)); setScrub(value)
   }, [])
 
   return { mode, secondsLeft, running, progress, bloom, carpet, completed, phaseDone, nextMode,
-           start, pause, reset, scrub, setScrub, preview }
+           durations, setDurations, start, pause, reset, scrub, setScrub, preview }
 }

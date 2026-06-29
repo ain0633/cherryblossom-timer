@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Scene } from './scene/Scene'
-import { usePomodoro, DURATIONS } from './usePomodoro'
+import { usePomodoro, DURATION_BOUNDS, type Mode } from './usePomodoro'
 import { playChime, notify, requestNotifyPermission } from './sound'
 
 function fmt(s: number) {
@@ -15,7 +15,7 @@ export default function App() {
   const petalAmount = t.mode === 'focus' ? t.bloom : 0
   // when a phase just finished, show the NEXT phase ready (paused) so 「시작」 starts it
   const dispMode = t.phaseDone ? t.nextMode : t.mode
-  const dispSeconds = t.phaseDone ? DURATIONS[t.nextMode] : t.secondsLeft
+  const dispSeconds = t.phaseDone ? t.durations[t.nextMode] : t.secondsLeft
 
   const [toast, setToast] = useState<string | null>(null)
   const toastTimer = useRef<number>(0)
@@ -50,6 +50,15 @@ export default function App() {
   // request notification permission on the first explicit start (user gesture)
   const handleStart = () => { requestNotifyPermission(); t.start() }
 
+  // custom phase lengths (minutes) — editable in the intro/settings modal
+  const minMin = Math.round(DURATION_BOUNDS.min / 60)
+  const maxMin = Math.round(DURATION_BOUNDS.max / 60)
+  const setMinutes = (m: Mode, minutes: number) => {
+    if (!Number.isFinite(minutes)) return
+    const mins = Math.min(maxMin, Math.max(minMin, Math.round(minutes)))
+    t.setDurations({ ...t.durations, [m]: mins * 60 })
+  }
+
   return (
     <>
       <Scene bloom={t.bloom} petalAmount={petalAmount} carpetAmount={t.carpet} />
@@ -65,8 +74,24 @@ export default function App() {
             <h1 className="intro-title">벚꽃이 지면</h1>
             <p className="intro-sub">꽃이 다 질 때까지 집중하는 뽀모도로 타이머</p>
             <div className="intro-lines">
-              <p><b>집중 45분</b> · 꽃잎이 하나둘 흩날려요 <span>낙화</span></p>
-              <p><b>휴식 15분</b> · 다시 벚꽃이 피어나요 <span>개화</span></p>
+              <p><b>집중 {Math.round(t.durations.focus / 60)}분</b> · 꽃잎이 하나둘 흩날려요 <span>낙화</span></p>
+              <p><b>휴식 {Math.round(t.durations.break / 60)}분</b> · 다시 벚꽃이 피어나요 <span>개화</span></p>
+            </div>
+            <div className="intro-settings">
+              <label>
+                <span>집중</span>
+                <input type="number" min={minMin} max={maxMin}
+                  value={Math.round(t.durations.focus / 60)}
+                  onChange={(e) => setMinutes('focus', parseInt(e.target.value, 10))} />
+                <span>분</span>
+              </label>
+              <label>
+                <span>휴식</span>
+                <input type="number" min={minMin} max={maxMin}
+                  value={Math.round(t.durations.break / 60)}
+                  onChange={(e) => setMinutes('break', parseInt(e.target.value, 10))} />
+                <span>분</span>
+              </label>
             </div>
             <p className="intro-foot">
               「시작」을 누르면 시간이 흐르기 시작하고,<br />
