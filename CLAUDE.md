@@ -101,11 +101,12 @@ Vite + React + TS + **React-Three-Fiber + drei**. 실행: `cd web && npm run dev
 - (완료) **정식 배포**: GitHub Pages + 커스텀 도메인 `ainsof.dev/cherryblossom-timer`. README 상세화.
 - (완료, 2026-06-29) **백그라운드 알람**: 다른 탭/앱 작업 중에도 단계 종료를 인지하도록 ①타이머를 RAF(백그라운드에서 멈춤)→**절대 종료시각(endAt) 기반 setInterval/setTimeout**으로 교체(`usePomodoro.ts`, 탭 복귀 시 visibilitychange 즉시 재계산), ②**시스템 알림(Notification API)** 추가(`sound.ts` requestNotifyPermission/notify, 첫 「시작」에서 권한 요청). 한계: 브라우저는 켜져 있어야 함(완전 종료 시 알람은 Web Push+서버 필요, 미구현).
 - (완료, 2026-06-29) **집중/휴식 시간 커스텀 설정**: 고정 DURATIONS → `durations` 상태(localStorage `'cbt-durations-v1'` 영속, 1~180분 클램프, `setDurations`은 정지 중이면 즉시 시계 반영). 인트로/설정 모달(`?` 버튼 재오픈)에 집중·휴식 분 입력 필드 추가, 안내 문구도 설정값 반영.
+- (완료, 2026-06-30) **캐노피 풍성하게 = 블렌더 카드 메쉬 그대로 가져오기**: 웹이 휑했던 원인 = `extract_blossoms_v2.py`가 블렌더 "Blossoms"(FlowerCard 카드 메쉬, 폴리 37,594) 중 **2만 위치만** 뽑아 flower.glb를 인스턴싱했기 때문. → `export_canopy.py`로 카드 메쉬 전체를 `canopy.glb`(6.4MB, no draco)로 추출(정점색 Col에 r=Tint값/2 명도·g=Tint채도/2·b=카드별 랜덤 패킹) + `flower_card.png` 복사. `Canopy.tsx`가 glTF 노드 트랜스폼 보존(trunk와 정합 — POSITION 좌표로 검증)하고 **MeshBasic+onBeforeCompile**로 FlowerCard 재현(텍스처 알파 alphaTest 0.45 + HSV 틴트, 채도 `vCard.g*1.64`로 형광기 제거, 명도 `vCard.r*1.6`), `bloom`으로 카드 랜덤 페이드(`vCard.b > uBloom` discard). `Scene.tsx` Blossoms→Canopy 교체. **낙화(FallingPetals)·구버전 Blossoms.tsx는 그대로 보존**(롤백은 import 한 줄). 라이브 반영됨.
 
 **다음 이어서 할 일(미완):**
 - **HTTPS 마무리**: `.dev`는 브라우저 HTTPS 강제. GitHub TLS 인증서 발급 완료되면 Settings→Pages "Enforce HTTPS" 체크(또는 `gh api -X PUT repos/ain0633/ain0633.github.io/pages -F https_enforced=true`). 가비아에 GitHub IP(185.199.108~111.153)와 무관한 파킹 A레코드(216.198.79.1)가 남아 있으면 삭제 권고함 — 정리됐는지 확인.
 - **모바일 대응**: 카메라/HUD/터치 컨트롤, 반응형. 현재 데스크톱 와이드 기준.
-- **성능/번들**: GLB 폴리곤·용량 점검(trunk.glb 5.3MB), 코드 분할, 모바일 인스턴스 수 조절.
+- **성능/번들**: GLB 폴리곤·용량 점검(trunk.glb 5.3MB + canopy.glb 6.4MB = 초기 로딩 ~12MB → canopy Draco 압축하면 1~2MB로), 코드 분할, 모바일 인스턴스 수 조절.
 - **마감 디테일**: 알파 텍스처 꽃잎, 잔잔한 배경 사운드(BGM/화이트노이즈), 알람음 다듬기.
 - (선택) 스크린샷/GIF를 README에 추가.
 - (선택) "쌓인 꽃잎이 살랑바람에 다시 날림" 웹에서 처리.
