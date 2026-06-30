@@ -2,7 +2,7 @@ import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { Suspense } from 'react'
 import { Tree } from './Tree'
-import { Blossoms } from './Blossoms'
+import { Canopy } from './Canopy'
 import { FallingPetals } from './FallingPetals'
 import { GroundCarpet } from './GroundCarpet'
 import { SkyDome } from './SkyDome'
@@ -29,7 +29,7 @@ export function Scene({ bloom, petalAmount, carpetAmount }:
         <Ground />
         <FarTrees bloom={bloom} />
         <Tree />
-        <Blossoms bloom={bloom} />
+        <Canopy bloom={bloom} />
         <FallingPetals amount={petalAmount} />
         <GroundCarpet amount={carpetAmount} />
       </Suspense>
