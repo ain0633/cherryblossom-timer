@@ -39,7 +39,7 @@ export function Canopy({ bloom }: { bloom: number }) {
         if (vCard.b > uBloom) discard;
         if (diffuseColor.a < 0.45) discard;
         vec3 hsv = rgb2hsv(diffuseColor.rgb);
-        hsv.y = clamp(hsv.y * vCard.g * 2.0, 0.0, 1.0);
+        hsv.y = clamp(hsv.y * vCard.g * 1.64, 0.0, 1.0);
         hsv.z = clamp(hsv.z * vCard.r * 2.0, 0.0, 1.6);
         diffuseColor.rgb = hsv2rgb(hsv);`)
     }
